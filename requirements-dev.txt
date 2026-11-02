@@ -1,0 +1,9 @@
+-r requirements.txt
+
+# Local Spark development
+pyspark==4.1.0
+delta-spark==4.2.0
+
+# Testing
+pytest==9.2.0
+chispa==0.12.0

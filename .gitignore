@@ -221,3 +221,18 @@ __marimo__/
 
 # macOS metadata
 .DS_Store
+
+# Python virtual environment
+.venv/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Keep example configuration tracked
+!.env.example
