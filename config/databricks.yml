@@ -1,0 +1,11 @@
+paths:
+  transactions_csv: /Volumes/<catalog>/<schema>/<volume>/input/transactions.csv
+  transaction_schema: /Volumes/<catalog>/<schema>/<volume>/input/transactions_schema.json
+
+  bronze: /Volumes/<catalog>/<schema>/<volume>/kpi_assessment/bronze_delta
+  quarantine: /Volumes/<catalog>/<schema>/<volume>/kpi_assessment/quarantine_delta
+  watermark: /Volumes/<catalog>/<schema>/<volume>/kpi_assessment/watermark_delta
+  daily_account_summary: /Volumes/<catalog>/<schema>/<volume>/kpi_assessment/daily_account_summary_delta
+  samples: /Volumes/<catalog>/<schema>/<volume>/kpi_assessment/samples
+
+export_sample_outputs: false

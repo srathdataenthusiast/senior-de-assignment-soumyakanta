@@ -1,0 +1,11 @@
+paths:
+  transactions_csv: data/backup/transactions.csv
+  transaction_schema: data/backup/transactions_schema.json
+
+  bronze: outputs/bronze_delta
+  quarantine: outputs/quarantine_delta
+  watermark: outputs/watermark_delta
+  daily_account_summary: outputs/daily_account_summary_delta
+  samples: outputs/samples
+
+export_sample_outputs: true
