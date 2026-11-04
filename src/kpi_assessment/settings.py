@@ -25,8 +25,8 @@ class Settings:
     timeout_seconds: int
 
     @classmethod
-    def from_environment(cls):
-        environment = os.getenv("APP_ENV", "local")
+    def from_environment(cls, environment=None):
+        environment = environment or os.getenv("APP_ENV", "local")
 
         config_file = PROJECT_ROOT / "config" / f"{environment}.yml"
 

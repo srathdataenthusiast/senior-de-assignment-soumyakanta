@@ -2,12 +2,16 @@
 Main entry point for transaction ingestion.
 """
 
+import argparse
 import logging
+import sys
 import uuid
+from pathlib import Path
 
 from pyspark.sql import SparkSession
 
-from delta import configure_spark_with_delta_pip
+# Add the src directory to the Python import path.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from kpi_assessment.settings import Settings
 from kpi_assessment.ingestion.csv_source import read_transactions_csv
@@ -24,13 +28,23 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    settings = Settings.from_environment()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--environment",
+        choices=["local", "databricks"],
+        default=None,
+    )
+    args = parser.parse_args()
+
+    settings = Settings.from_environment(args.environment)
     batch_id = str(uuid.uuid4())
 
     # Create Spark session.
     builder = SparkSession.builder.appName("KPI-Assessment")
 
     if settings.environment == "local":
+        from delta import configure_spark_with_delta_pip
+
         builder = (
             builder
             .config(
@@ -42,6 +56,7 @@ def main():
                 "org.apache.spark.sql.delta.catalog.DeltaCatalog",
             )
         )
+
         spark = configure_spark_with_delta_pip(builder).getOrCreate()
     else:
         spark = builder.getOrCreate()
@@ -89,7 +104,7 @@ def main():
             batch_id,
         )
 
-        # 5. Export review samples for the assessment.
+        # 5. Export review samples when enabled.
         if settings.export_sample_outputs:
             (
                 spark.read.format("delta")
