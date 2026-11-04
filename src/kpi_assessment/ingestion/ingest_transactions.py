@@ -10,8 +10,15 @@ from pathlib import Path
 
 from pyspark.sql import SparkSession
 
-# Add the src directory to the Python import path.
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+# Find the project root from the current working directory.
+project_root = Path.cwd()
+
+while not (project_root / "src" / "kpi_assessment").is_dir():
+    if project_root.parent == project_root:
+        raise RuntimeError("Could not locate the project src directory.")
+    project_root = project_root.parent
+
+sys.path.insert(0, str(project_root / "src"))
 
 from kpi_assessment.settings import Settings
 from kpi_assessment.ingestion.csv_source import read_transactions_csv
