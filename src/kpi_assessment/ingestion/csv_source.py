@@ -21,7 +21,6 @@ from typing import Union
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
     current_timestamp,
-    input_file_name,
     lit,
 )
 from pyspark.sql.types import (
@@ -166,10 +165,10 @@ def read_transactions_csv(
     # Attach operational metadata.
     dataframe = (
         dataframe
-        .withColumn("_source_file", input_file_name())
-        .withColumn("_source_system", lit("backup_csv"))
-        .withColumn("_ingestion_timestamp", current_timestamp())
-        .withColumn("_batch_id", lit(batch_id))
+            .withColumn("_source_file", lit(csv_path))
+            .withColumn("_source_system", lit("backup_csv"))
+            .withColumn("_ingestion_timestamp", current_timestamp())
+            .withColumn("_batch_id", lit(batch_id))
     )
 
     logger.info(
