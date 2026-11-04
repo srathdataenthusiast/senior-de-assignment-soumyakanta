@@ -1,53 +1,53 @@
 # Senior Data Engineer Take-Home Assessment
 
-**Transaction Ingestion and Daily Account KPI Pipeline**
+## Transaction Ingestion and Daily Account KPI Pipeline
 
-A PySpark and Delta Lake implementation covering transaction ingestion, data-quality validation, duplicate detection, incremental processing, and daily account-level summaries.
+A PySpark and Delta Lake implementation demonstrating transaction ingestion, data-quality validation, duplicate detection, incremental-processing foundations, and daily account-level KPI aggregation.
+
+The solution uses a shared Python codebase that runs locally and on Azure Databricks, with environment-specific configuration and Unity Catalog Volume storage.
 
 ---
 
 ## 1. Project Overview
 
-This project implements a transaction data pipeline that ingests source transactions, validates data quality, separates invalid records into quarantine, persists valid records in Delta Lake, and generates daily account summaries.
+The objective is to build a reliable transaction-processing pipeline that:
 
-The implementation is designed to support both local development and deployment on Azure Databricks through environment-specific configuration.
+- Reads the supplied transaction CSV using the provided JSON schema.
+- Validates transaction structure, required fields, data types, and permitted values.
+- Separates invalid records into a quarantine dataset with rejection reasons.
+- Identifies duplicate business transactions without deleting source records.
+- Persists valid transactions in Bronze Delta Lake.
+- Generates daily account-level transaction summaries.
+- Maintains transaction-date watermarks for incremental-processing support.
+- Supports repeatable processing through Delta MERGE operations and automated tests.
 
-### Assessment objectives
+### Implementation approach
 
-- Ingest transaction records from the supplied backup dataset or API.
-- Validate transaction structure, data types, required fields, and permitted values.
-- Quarantine invalid records with clear rejection reasons.
-- Identify duplicate business transactions without losing source records.
-- Persist validated transactions in Bronze Delta Lake.
-- Generate daily account-level transaction summaries.
-- Maintain transaction-date watermarks for incremental extraction.
-- Demonstrate repeatable processing through tests and Delta MERGE operations.
+The solution separates source ingestion, data-quality validation, duplicate detection, storage, transformation, and orchestration.
+
+The same processing code is used in both environments. Configuration determines the input and output paths.
 
 ## 2. Architecture
 
 ```text
-                  Transaction Source
-                   /             \
-              REST API        Backup CSV
-                  |               |
-                  |          csv_source.py
-                  |               |
-             api_client.py       |
-                  |               |
-                  +-------+-------+
-                          |
-                          v
-                 Transaction DataFrame
-                          |
-                          v
+              HR-Provided Transaction CSV
+                         |
+                         v
+                   csv_source.py
+                         |
+                         v
+                Raw Transaction DataFrame
+                         |
+                         v
                     pipeline.py
-                          |
-                  Data Quality Checks
+                         |
+                 Data Quality Validation
                     /          \
                    /            \
-              Valid Records    Invalid Records
+             Valid Records    Invalid Records
                    |                |
-             Duplicate Flagging   Quarantine
+                   v                v
+           Duplicate Detection  Quarantine
                    |
                    v
                Bronze Delta
@@ -58,22 +58,21 @@ The implementation is designed to support both local development and deployment 
                    v
           Daily Summary Delta
 
-          Watermark Management
-          (Incremental Processing)
+              Watermark Management
 ```
 
-### Main processing components
+### Main components
 
 | Component | Responsibility |
 |---|---|
-| `csv_source.py` | Reads the supplied CSV and attaches ingestion metadata |
-| `api_client.py` | Handles API requests, pagination, retries and date filtering |
-| `pipeline.py` | Coordinates validation, duplicate detection and ingestion persistence |
-| `validation.py` | Applies transaction schema and data-quality rules |
+| `csv_source.py` | Reads the supplied CSV, applies the expected source columns, and attaches ingestion metadata |
+| `pipeline.py` | Coordinates validation, duplicate detection, and Bronze/Quarantine persistence |
+| `validation.py` | Applies schema and transaction data-quality rules |
 | `duplicate_detection.py` | Identifies duplicate business transactions |
-| `delta_writer.py` | Writes and merges Delta tables |
-| `watermark.py` | Reads, calculates and persists extraction watermarks |
-| `daily_account_summary.py` | Builds daily account-level KPI summaries |
+| `delta_writer.py` | Handles Delta writes and MERGE operations |
+| `watermark.py` | Reads, calculates, and persists transaction-date watermarks |
+| `daily_account_summary.py` | Builds account-level daily KPI summaries |
+| `settings.py` | Loads environment-specific YAML configuration |
 | `ingest_transactions.py` | Main execution entry point |
 
 ## 3. Technology Stack
@@ -82,13 +81,13 @@ The implementation is designed to support both local development and deployment 
 |---|---|
 | Python 3.11 | Application and orchestration logic |
 | PySpark | Distributed data processing and transformations |
-| Delta Lake | Transactional storage and MERGE operations |
+| Delta Lake | Transactional data persistence and MERGE operations |
+| Unity Catalog | Data governance and Volume storage |
+| Azure Databricks | Cloud execution platform |
 | PyYAML | Environment-specific configuration |
-| Requests | REST API integration |
-| Tenacity | Retry handling with exponential backoff |
-| JSON Schema | Source schema validation |
-| Pytest | Unit and integration-style testing |
-| Azure Databricks | Target execution platform |
+| JSON Schema | Source schema definition and validation |
+| Pycountry | Country-code validation |
+| Pytest | Automated testing |
 
 ## 4. Repository Structure
 
@@ -104,22 +103,18 @@ senior-de-assignment-soumyakanta/
 │       ├── transactions.csv
 │       └── transactions_schema.json
 │
-├── docs/
-│
 ├── outputs/
 │   └── samples/
 │       ├── quarantine/
 │       └── daily_account_summary/
 │
 ├── scripts/
-│   ├── check_config.py
-│   └── test_api_connection.py
+│   └── check_config.py
 │
 ├── src/kpi_assessment/
 │   ├── incremental/
 │   │   └── watermark.py
 │   ├── ingestion/
-│   │   ├── api_client.py
 │   │   ├── csv_source.py
 │   │   ├── ingest_transactions.py
 │   │   └── pipeline.py
@@ -147,7 +142,7 @@ senior-de-assignment-soumyakanta/
 └── README.md
 ```
 
-## 5. Local Setup
+## 5. Local Development Setup
 
 ### Prerequisites
 
@@ -178,19 +173,19 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Set the local environment:
+Set:
 
 ```dotenv
 APP_ENV=local
 ```
 
-The application loads `config/local.yml` and uses the configured CSV, schema, and output paths.
+The application loads `config/local.yml`.
 
-API credentials are supplied through environment variables, not committed configuration files.
+No credentials are required for the supplied CSV-based implementation.
 
 ## 6. Environment Configuration
 
-The project uses YAML configuration files to separate environment-specific paths from application logic.
+Environment-specific paths are maintained in YAML files instead of being embedded in application code.
 
 ### Local configuration
 
@@ -212,43 +207,72 @@ export_sample_outputs: true
 
 ### Databricks configuration
 
-`config/databricks.yml` contains the corresponding Unity Catalog Volume paths.
+`config/databricks.yml` uses Unity Catalog Volume paths.
 
-Before deployment, replace the catalog, schema, and volume placeholders with the actual Databricks environment values.
-
-Select the configuration using:
-
-```dotenv
-APP_ENV=local
-```
-
-For Databricks:
+The configured Volume is:
 
 ```text
-APP_ENV=databricks
+/Volumes/kpi_assessment_dbx/kpi_assessment/assessment_files
 ```
 
-The application uses the same settings interface in both environments.
+Input files:
 
-## 7. Execute the Pipeline
+```text
+/Volumes/kpi_assessment_dbx/kpi_assessment/assessment_files/transactions.csv
 
-From the project root, run:
+/Volumes/kpi_assessment_dbx/kpi_assessment/assessment_files/transactions_schema.json
+```
+
+Delta output locations:
+
+```text
+/Volumes/kpi_assessment_dbx/kpi_assessment/assessment_files/kpi_assessment/
+    bronze_delta/
+    quarantine_delta/
+    watermark_delta/
+    daily_account_summary_delta/
+```
+
+Sample exports are disabled in the Databricks configuration because review-friendly samples were already generated locally.
+
+### Selecting the environment
+
+Local execution:
 
 ```bash
 PYTHONPATH=src python -m kpi_assessment.ingestion.ingest_transactions
 ```
 
-The entry point performs the following operations:
+Databricks execution:
 
-1. Loads environment-specific configuration.
-2. Creates or obtains the Spark session.
-3. Reads transactions from the configured CSV source.
-4. Validates records and identifies duplicates.
-5. Persists valid transactions in Bronze Delta.
-6. Persists rejected transactions in Quarantine.
-7. Builds and persists the daily account summary.
-8. Updates the transaction watermark after successful processing.
-9. Exports review-friendly samples when enabled.
+```text
+--environment databricks
+```
+
+The Databricks task passes the environment argument through its Python script parameters.
+
+## 7. Pipeline Execution
+
+There is one main execution entry point:
+
+`src/kpi_assessment/ingestion/ingest_transactions.py`
+
+The entry point coordinates the existing modules:
+
+1. Load environment-specific configuration.
+2. Create or obtain the Spark session.
+3. Read the transaction CSV.
+4. Attach source and ingestion metadata.
+5. Validate the input records.
+6. Flag duplicate business transactions.
+7. Persist valid transactions in Bronze Delta.
+8. Persist invalid transactions in Quarantine.
+9. Build the daily account summary from Bronze.
+10. Persist the summary.
+11. Update the watermark after successful data processing.
+12. Export review samples when enabled.
+
+The ingestion pipeline and transformations are shared between local execution and Databricks.
 
 ## 8. Data Quality and Duplicate Handling
 
@@ -258,49 +282,53 @@ The validation module checks:
 
 - Required transaction fields.
 - Expected source schema and column structure.
-- Transaction identifiers and account identifiers.
-- Valid transaction timestamps.
+- Transaction and account identifiers.
+- Transaction timestamp format and validity.
 - Positive transaction amounts and permitted precision.
-- Currency, transaction type, status, and merchant category values.
+- Currency values.
+- Transaction types.
+- Transaction statuses.
+- Merchant categories.
 - Assigned country codes.
-- Missing or blank mandatory values.
+- Missing or blank mandatory fields.
 
-Invalid records are separated from valid records and stored in Quarantine.
+Invalid records are separated into Quarantine.
 
-Each rejected record contains:
+Each rejected transaction contains:
 
 | Field | Description |
 |---|---|
 | `error_reason` | Explains the validation failure |
-| `_ingestion_timestamp` | When the transaction was processed |
-| `_batch_id` | Identifies the ingestion execution |
+| `_ingestion_timestamp` | Processing timestamp |
+| `_batch_id` | Identifies the ingestion run |
 | `_source_system` | Identifies the source |
+| `_source_file` | Identifies the configured source file |
 
 ### Duplicate detection
 
-Duplicate detection compares business transaction attributes while excluding `transaction_id`.
+Duplicate detection compares transaction business attributes while excluding `transaction_id`.
 
-The natural-key comparison uses:
+The comparison uses:
 
-- account_id
-- transaction_date
-- amount
-- currency
-- transaction_type
-- merchant_name
-- merchant_category
-- country_code
-- status
+- `account_id`
+- `transaction_date`
+- `amount`
+- `currency`
+- `transaction_type`
+- `merchant_name`
+- `merchant_category`
+- `country_code`
+- `status`
 
-Duplicate records are retained in Bronze and flagged using `_is_duplicate`.
+Duplicate transactions are retained in Bronze and flagged using `_is_duplicate`.
 
-The daily summary excludes duplicate copies.
+The daily summary excludes duplicate copies, preventing duplicate business activity from inflating the KPIs.
 
-This preserves source-level information while preventing duplicate business activity from inflating the aggregated metrics.
+This approach preserves source records while making downstream aggregation safer.
 
 ## 9. Daily Account Summary
 
-The daily summary includes completed transactions only and excludes records that were quarantined or flagged as duplicate copies.
+The daily summary includes completed transactions only and excludes duplicate copies.
 
 The output contains:
 
@@ -321,7 +349,7 @@ The output contains:
 
 The supplied data contains account-days with transactions in multiple currencies.
 
-Combining amounts in different currencies would produce misleading financial totals.
+Adding different currencies without conversion would produce misleading financial totals.
 
 Therefore, debit, credit, net amount, and top category are represented as currency-keyed maps.
 
@@ -349,7 +377,7 @@ For example:
 }
 ```
 
-The daily summary is persisted using Delta MERGE keyed by account and transaction date, supporting repeatable summary updates.
+The daily summary is persisted using Delta MERGE keyed by `account_id` and `transaction_date`, supporting repeatable summary updates.
 
 ## 10. Incremental Processing and Watermarks
 
@@ -365,21 +393,23 @@ The watermark is based on the maximum valid transaction timestamp.
 The implementation includes:
 
 - Initial extraction when no watermark exists.
-- A configurable lookback calculation, currently three days.
+- A three-day lookback calculation.
 - UTC-normalized watermark handling.
 - Protection against moving the stored watermark backward.
 - No watermark advancement when there are no valid transaction dates.
 - Watermark persistence after successful data-output processing.
 
-Bronze records are merged using `transaction_id` to avoid inserting the same transaction repeatedly.
+Bronze records are merged using `transaction_id` to prevent duplicate transaction IDs on reruns.
 
-**Current implementation limitation:** the local CSV entry point reads the full supplied backup file on each run. The watermark and lookback helpers are implemented and tested, but the CSV entry point does not yet apply the calculated lookback as a source filter. The API client's date-filter capability is intended for the API extraction path.
+**Current implementation limitation:** the CSV entry point reads the complete supplied backup file on each run. The watermark and lookback utilities are implemented and tested, but the calculated lookback is not yet applied as a filter to the CSV source.
 
-The incremental tests simulate repeated extraction and verify the watermark and idempotency behaviour.
+The incremental tests simulate repeated extraction and verify watermark and idempotency behaviour.
+
+Quarantine currently uses append writes, so repeated processing of the same invalid transaction can create additional quarantine records. A production implementation could use a transaction-keyed MERGE for current quarantine state or maintain a separate append-only rejection history.
 
 ## 11. Output Locations
 
-The local execution produces:
+### Local outputs
 
 ```text
 outputs/
@@ -392,21 +422,34 @@ outputs/
     └── daily_account_summary/
 ```
 
-The four Delta directories contain the persisted datasets and Delta transaction logs.
+### Databricks outputs
 
-The samples directory contains CSV and JSON exports for convenient assessment review.
+The same logical datasets are written under the Unity Catalog Volume:
 
-Set `export_sample_outputs` to `false` in the environment configuration when review samples are not required.
+```text
+assessment_files/
+└── kpi_assessment/
+    ├── bronze_delta/
+    ├── quarantine_delta/
+    ├── watermark_delta/
+    └── daily_account_summary_delta/
+```
 
-## 12. Testing
+Each Delta directory contains its transaction log and Parquet data files.
 
-Run the complete test suite:
+The datasets are currently stored as Delta files at Volume paths; they are not separately registered as named Unity Catalog tables.
+
+## 12. Testing and Verification
+
+### Automated tests
+
+Run the test suite locally:
 
 ```bash
 PYTHONPATH=src python -m pytest -v tests/
 ```
 
-The current test suite contains 12 passing tests covering:
+The test suite contains 12 passing tests covering:
 
 - Transaction validation.
 - Duplicate detection.
@@ -417,9 +460,11 @@ The current test suite contains 12 passing tests covering:
 - Daily account summary calculations.
 - Idempotent summary updates.
 
-**Latest local verification:** 12 tests passed.
+**Latest local test result: 12 passed.**
 
-A local end-to-end execution also processed the supplied backup dataset:
+### Local end-to-end execution
+
+The supplied backup dataset was processed locally with the following results:
 
 | Metric | Result |
 |---|---:|
@@ -429,42 +474,108 @@ A local end-to-end execution also processed the supplied backup dataset:
 | Duplicate transactions flagged | 5 |
 | Maximum valid transaction timestamp | 2024-03-30 22:35:29 UTC |
 
+### Azure Databricks execution
+
+The same application code was deployed through a Databricks Lakeflow Job using:
+
+- GitHub repository integration.
+- `main` branch as the Git source.
+- Python script task.
+- Serverless compute.
+- A custom Python environment with four dependencies.
+- Databricks environment argument: `--environment databricks`.
+- Unity Catalog Volume input and output paths.
+
+The job completed successfully.
+
+The persisted Delta datasets were independently queried from a Databricks notebook to verify record counts.
+
+| Dataset | Verified records |
+|---|---:|
+| Bronze Delta | 349 |
+| Quarantine Delta | 3 |
+| Watermark Delta | 1 |
+| Daily Account Summary Delta | 257 |
+
+The Databricks output counts matched the local ingestion results and the generated daily summary.
+
 ## 13. Assumptions, Limitations and Future Improvements
 
-The following points should be considered before production deployment.
+The following considerations apply before production deployment:
 
-1. **Live API connectivity:** The assessment API endpoint could not be resolved during development because of a DNS resolution failure. The supplied backup CSV was used as the fallback dataset. The API connector implementation is present but has not been validated against a successful live API response.
+1. **Source availability:** The supplied backup CSV is used as the input source for the completed implementation.
 
-2. **Quarantine history:** Quarantine currently uses append writes. Reprocessing the same invalid transaction can create another quarantine record. A production implementation could use a transaction-keyed MERGE for current quarantine state or maintain a separate append-only rejection history.
+2. **Incremental extraction:** Watermark and lookback utilities are implemented, but the current CSV entry point reads the complete backup dataset rather than applying an incremental source filter.
 
-3. **Incremental extraction:** The watermark and lookback utilities are implemented, but end-to-end source filtering is not yet wired into the CSV entry point.
+3. **Quarantine history:** Quarantine currently uses append writes. Reprocessing can create repeated rejection records. A production design should explicitly select between current quarantine state and historical rejection tracking.
 
-4. **Late-arriving transactions:** A lookback window helps capture records arriving with earlier transaction dates. The appropriate window should be agreed with source-system owners and monitored.
+4. **Late-arriving transactions:** The three-day lookback provides a foundation for handling late-arriving data. The appropriate window should be agreed with source owners and monitored.
 
-5. **Operational monitoring:** Production deployment should include ingestion counts, validation failure rates, duplicate rates, watermark freshness, processing duration, and pipeline failure alerts.
+5. **Operational monitoring:** Production deployment should track ingestion counts, validation failure rates, duplicate rates, watermark freshness, execution duration, and job failures.
 
 6. **Currency conversion:** Cross-currency aggregation requires an agreed exchange-rate source, conversion timestamp, and base currency. This implementation deliberately avoids implicit conversion.
 
-7. **Production governance:** Additional controls should include ownership, lineage, retention policies, access controls, schema-change monitoring, and documented data-quality expectations.
+7. **Data governance:** Production controls should include ownership, lineage, retention, access policies, schema-change monitoring, and documented data-quality expectations.
 
-## 14. Databricks Deployment Target
+## 14. Azure Databricks Deployment
 
-The implementation separates source reading, processing, transformation, storage, and orchestration so that the same application logic can run on Azure Databricks.
+The application was successfully executed on Azure Databricks Serverless.
 
-The intended deployment uses:
+Deployment components:
 
-- Azure Databricks with Unity Catalog.
-- Unity Catalog Volumes for input and output paths.
-- Databricks-managed Spark and Delta Lake.
-- Environment-specific configuration through `APP_ENV=databricks`.
-- A Lakeflow Job to execute the packaged application.
+- Azure Databricks workspace.
+- Unity Catalog catalog and schema.
+- Managed Unity Catalog Volume.
+- GitHub integration.
+- Lakeflow Job with Python script task.
+- Serverless compute.
+- Environment-specific YAML configuration.
 
-Databricks deployment and execution should be validated separately before considering the solution production-ready. The current verification results are from the local Spark and Delta environment.
+The successful run verified that the shared PySpark and Delta Lake application can execute on Databricks and persist all four datasets to the configured Volume.
 
-## 15. AI Assistance and Verification
+## 15. Databricks Execution Evidence
 
-AI tools were used as development assistance for architecture discussions, implementation guidance, code review, and documentation.
+The following screenshots provide evidence of the successful deployment and execution of the transaction pipeline on Azure Databricks Serverless.
 
-The resulting implementation was reviewed and verified through local execution and automated tests. Design decisions, assumptions, limitations, and output behaviour are documented here for independent technical review.
+### Databricks Workspace
 
+The project was deployed from the GitHub repository and executed through a Databricks Lakeflow Job using Serverless compute.
 
+![Databricks Workspace](docs/images/databricks-workspace.png)
+
+### Delta Dataset Verification
+
+The persisted Delta datasets were independently queried in Databricks to verify their record counts.
+
+**Verification – Summary and Watermark**
+
+![Delta Verification](docs/images/databricks-delta-verification.png)
+
+**Verification – Bronze and Quarantine**
+
+![Delta Verification](docs/images/databricks-delta-verification2.png)
+
+Verified record counts:
+
+| Dataset | Records |
+|---|---:|
+| Bronze | 349 |
+| Quarantine | 3 |
+| Watermark | 1 |
+| Daily Account Summary | 257 |
+
+### Unity Catalog Volume Outputs
+
+All four Delta datasets were persisted under the assessment Volume in Unity Catalog.
+
+![Databricks Volume Outputs](docs/images/databricks-volume-outputs.png)
+
+These screenshots demonstrate successful cloud execution, Delta persistence, and independent verification of the generated datasets.
+
+## 16. AI Assistance and Verification
+
+AI tools were used as development assistance for architecture discussions, implementation guidance, code review, troubleshooting, and documentation.
+
+The implementation was reviewed through local execution, automated tests, and an actual Azure Databricks job run. The resulting outputs were independently checked in Databricks.
+
+Design decisions, assumptions, limitations, and verification results are documented for technical review.
