@@ -1,6 +1,7 @@
 """
 Detect duplicate transactions by comparing all transaction fields except transaction_id.
 Flag duplicate copies while retaining all records for auditability.
+Just adding some comments and see what happens
 """
 
 from pyspark.sql import DataFrame, Window
