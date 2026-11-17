@@ -7,10 +7,6 @@ sync:
     - config/databricks.yml
     - requirements.txt
 
-variables:
-  workspace_host:
-    description: Azure Databricks workspace URL
-
 targets:
   dev:
     mode: development
