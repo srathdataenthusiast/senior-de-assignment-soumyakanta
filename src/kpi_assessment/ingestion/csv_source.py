@@ -177,5 +177,5 @@ def read_transactions_csv(
         len(expected_columns),
         batch_id,
     )
-
+    print("some random changes")
     return dataframe
