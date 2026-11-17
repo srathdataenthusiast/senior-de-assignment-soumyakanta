@@ -1,11 +1,10 @@
-
 name: Databricks Code Deployment
 
 on:
   push:
-    branches:
-      - dev
-      - main
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
   workflow_dispatch:
 
 permissions:
@@ -15,6 +14,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    # Note: On PRs, this will default to 'dev'. If your 'dev' environment has a manual approval rule, the PR check will pause until approved.
     environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
 
     env:
@@ -36,7 +36,9 @@ jobs:
         env:
           BUNDLE_TARGET: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
 
+      # THIS IS THE CRITICAL FIX: Only deploy on a push, NOT on a pull request
       - name: Deploy source code
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: databricks bundle deploy -t "$BUNDLE_TARGET"
         env:
           BUNDLE_TARGET: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
