@@ -1,7 +1,10 @@
 """
 Detect duplicate transactions by comparing all transaction fields except transaction_id.
 Flag duplicate copies while retaining all records for auditability.
+Just adding some comments and see what happens
 """
+
+# Want to test ci-cd and let the code push through the pipeline dev --> test --> prod
 
 from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as F
