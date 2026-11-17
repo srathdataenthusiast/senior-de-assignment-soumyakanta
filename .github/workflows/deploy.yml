@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
 
     # Note: On PRs, this will default to 'dev'. If your 'dev' environment has a manual approval rule, the PR check will pause until approved.
-    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
 
     env:
       DATABRICKS_AUTH_TYPE: oauth-m2m
