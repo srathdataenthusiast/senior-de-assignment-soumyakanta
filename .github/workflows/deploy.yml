@@ -1,0 +1,42 @@
+
+name: Databricks Code Deployment
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+
+    env:
+      DATABRICKS_AUTH_TYPE: oauth-m2m
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+      BUNDLE_VAR_workspace_host: ${{ vars.DATABRICKS_HOST }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate bundle
+        run: databricks bundle validate -t "$BUNDLE_TARGET"
+        env:
+          BUNDLE_TARGET: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+
+      - name: Deploy source code
+        run: databricks bundle deploy -t "$BUNDLE_TARGET"
+        env:
+          BUNDLE_TARGET: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
