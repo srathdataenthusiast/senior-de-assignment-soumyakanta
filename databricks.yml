@@ -6,6 +6,41 @@ sync:
     - src/**
     - config/databricks.yml
     - requirements.txt
+    - data/**
+
+# --- PHASE 1: DEFINE THE JOB ---
+resources:
+  jobs:
+    kpi_de_pipeline:
+      name: "KPI Assessment Pipeline - ${bundle.target}"
+
+      # PRODUCTION SUPPORT: Send an email if the job fails
+      email_notifications:
+        on_failure:
+          - "srath.dataenthusiast@gmail.com" # Update this if your GitHub email is different
+
+      # Define a small, cost-effective cluster for the job
+      job_clusters:
+        - job_cluster_key: "de_cluster"
+          new_cluster:
+            spark_version: "14.3.x-scala2.12"
+            node_type_id: "Standard_DS3_v2" # If you are in a different region, this might be Standard_D3_v2
+            num_workers: 1
+            autoscale:
+              min_workers: 1
+              max_workers: 2
+            data_security_mode: SINGLE_USER
+
+      tasks:
+        - task_key: "run_ingest_transactions"
+          job_cluster_key: "de_cluster"
+          spark_python_task:
+            python_file: "src/kpi_assessment/ingestion/ingest_transactions.py"
+            parameters: ["--environment", "databricks"]
+          # Install your dependencies from requirements.txt
+          libraries:
+            - requirements:
+                file: "requirements.txt"
 
 targets:
   dev:
