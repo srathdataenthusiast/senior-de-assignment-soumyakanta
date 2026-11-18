@@ -19,15 +19,12 @@ resources:
 
       tasks:
         - task_key: "run_ingest_transactions"
-          # REMOVED: job_cluster_key - there is no cluster definition anymore
           spark_python_task:
             python_file: "src/kpi_assessment/ingestion/ingest_transactions.py"
             parameters: ["--environment", "databricks"]
 
-          # This links the task to the serverless environment below
           environment_key: "default"
 
-      # Define the serverless environment and its dependencies
       environments:
         - environment_key: "default"
           spec:
@@ -36,3 +33,15 @@ resources:
               - "PyYAML"
               - "pycountry"
               - "jsonschema"
+
+# THE MISSING PIECE: Targets for Dev and Prod
+targets:
+  dev:
+    mode: development
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
