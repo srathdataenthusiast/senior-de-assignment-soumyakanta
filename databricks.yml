@@ -33,6 +33,7 @@ resources:
               - "PyYAML"
               - "pycountry"
               - "jsonschema"
+              - "python-dotenv"
 
 # THE MISSING PIECE: Targets for Dev and Prod
 targets:
