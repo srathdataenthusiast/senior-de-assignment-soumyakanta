@@ -13,23 +13,21 @@ resources:
     kpi_de_pipeline:
       name: "KPI Assessment Pipeline - ${bundle.target}"
 
-      # PRODUCTION SUPPORT: Email notification on failure
       email_notifications:
         on_failure:
           - "srath.dataenthusiast@gmail.com"
 
       tasks:
         - task_key: "run_ingest_transactions"
-          # REMOVED: job_cluster_key: "de_cluster"
-
+          # REMOVED: job_cluster_key - there is no cluster definition anymore
           spark_python_task:
             python_file: "src/kpi_assessment/ingestion/ingest_transactions.py"
             parameters: ["--environment", "databricks"]
 
-          # NEW: Reference the serverless environment for dependencies
+          # This links the task to the serverless environment below
           environment_key: "default"
 
-      # NEW: Define the serverless environment and its dependencies
+      # Define the serverless environment and its dependencies
       environments:
         - environment_key: "default"
           spec:
@@ -38,6 +36,3 @@ resources:
               - "PyYAML"
               - "pycountry"
               - "jsonschema"
-              # Add any other packages from your requirements.txt here
-              # (e.g., "delta-spark", "pyspark", etc.)
-              # For a complete list, you can refer to your requirements.txt
